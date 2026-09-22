@@ -1,31 +1,124 @@
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-export default function Register({ onLogin, onHome }) {
-	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>Criar cadastro</Text>
-			<TextInput style={styles.input} placeholder="Nome" />
-			<TextInput style={styles.input} placeholder="E-mail" keyboardType="email-address" autoCapitalize="none" />
-			<TextInput style={styles.input} placeholder="Senha" secureTextEntry />
-			<TouchableOpacity style={styles.button}>
-				<Text style={styles.buttonText}>Cadastrar</Text>
-			</TouchableOpacity>
-			<TouchableOpacity onPress={onLogin}>
-				<Text style={styles.link}>Já tenho cadastro</Text>
-			</TouchableOpacity>
-			<TouchableOpacity onPress={onHome}>
-				<Text style={styles.back}>Voltar para Home</Text>
-			</TouchableOpacity>
-		</View>
-	);
+export default function Register({ onLogin, onRegister }) {
+  const [name, setName] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [senha, setSenha] = useState('');
+  const [rm, setRm] = useState('');
+
+  const handleSubmit = () => {
+    onRegister({ name, cpf, senha, rm });
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Cadastro</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Nome"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="CPF"
+          value={cpf}
+          onChangeText={setCpf}
+          keyboardType="numeric"
+          maxLength={11}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Senha"
+          value={senha}
+          onChangeText={setSenha}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="RM (4 dígitos)"
+          value={rm}
+          onChangeText={setRm}
+          keyboardType="numeric"
+          maxLength={4}
+        />
+
+        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+          <Text style={styles.buttonText}>Cadastrar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onLogin}>
+          <Text style={styles.link}>Já tenho login</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: '#f5f9ff', justifyContent: 'center', padding: 24 },
-	title: { color: '#0d47a1', fontSize: 32, fontWeight: '700', marginBottom: 28, textAlign: 'center' },
-	input: { backgroundColor: '#fff', borderColor: '#c7d8f2', borderRadius: 8, borderWidth: 1, fontSize: 16, marginBottom: 14, padding: 15 },
-	button: { backgroundColor: '#0d47a1', borderRadius: 8, alignItems: 'center', padding: 16, marginTop: 4, marginBottom: 20 },
-	buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-	link: { color: '#0d47a1', fontSize: 15, textAlign: 'center', fontWeight: '600' },
-	back: { color: '#52657d', fontSize: 14, textAlign: 'center', marginTop: 24 },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  title: {
+    color: '#0f172a',
+    fontSize: 30,
+    fontWeight: '800',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: '#ffffff',
+    borderColor: '#dbe3f0',
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: 16,
+    marginBottom: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 15,
+  },
+  button: {
+    backgroundColor: '#2563eb',
+    borderRadius: 12,
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginTop: 8,
+    marginBottom: 18,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  link: {
+    color: '#2563eb',
+    fontSize: 15,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
 });
