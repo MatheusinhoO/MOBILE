@@ -2,19 +2,17 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
+import { apiRequest } from './api';
 import Home from './pages/home';
 import Login from './pages/login';
 import PcRegister from './pages/PcRegister';
 import Register from './pages/register';
 import Splash from './pages/splash';
 
-const USERS_KEY = 'users';
-const COMPUTERS_KEY = 'computers';
 const SESSION_KEY = 'sessionUser';
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
-  const [users, setUsers] = useState([]);
   const [computers, setComputers] = useState([]);
   const [loggedUser, setLoggedUser] = useState(null);
   const [isReady, setIsReady] = useState(false);
@@ -25,52 +23,40 @@ export default function App() {
 
   useEffect(() => {
     if (!isReady) return;
-    persistData();
-  }, [users, computers, loggedUser, isReady]);
+    AsyncStorage.setItem(SESSION_KEY, JSON.stringify(loggedUser)).catch((error) => {
+      console.log('Erro ao salvar a sessão:', error);
+    });
+  }, [loggedUser, isReady]);
 
   const loadStoredData = async () => {
     try {
-      const [storedUsers, storedComputers, storedSession] = await Promise.all([
-        AsyncStorage.getItem(USERS_KEY),
-        AsyncStorage.getItem(COMPUTERS_KEY),
-        AsyncStorage.getItem(SESSION_KEY),
-      ]);
-
-      const parsedUsers = storedUsers ? JSON.parse(storedUsers) : [];
-      const parsedComputers = storedComputers ? JSON.parse(storedComputers) : [];
+      const storedSession = await AsyncStorage.getItem(SESSION_KEY);
       const parsedSession = storedSession ? JSON.parse(storedSession) : null;
-
-      setUsers(parsedUsers);
-      setComputers(parsedComputers);
       setLoggedUser(parsedSession);
 
       if (parsedSession) {
         setScreen('home');
       }
     } catch (error) {
-      console.log('Erro ao carregar dados salvos:', error);
+      console.log('Erro ao carregar a sessão salva:', error);
+    }
+
+    try {
+      setComputers(await apiRequest('/computadores'));
+    } catch (error) {
+      Alert.alert('Erro de conexão', `Não foi possível carregar os computadores. ${error.message}`);
     } finally {
       setIsReady(true);
     }
   };
 
-  const persistData = async () => {
-    try {
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
-      await AsyncStorage.setItem(COMPUTERS_KEY, JSON.stringify(computers));
-      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(loggedUser || null));
-    } catch (error) {
-      console.log('Erro ao salvar dados:', error);
-    }
-  };
-
-  const handleRegisterUser = async ({ name, cpf, senha, rm }) => {
+  const handleRegisterUser = async ({ name, email, cpf, senha }) => {
     const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
     const cleanCpf = cpf.replace(/\D/g, '');
-    const cleanRm = rm.replace(/\D/g, '');
 
-    if (!cleanName || !cleanCpf || !cleanRm || !senha.trim()) {
-      Alert.alert('Campos obrigatórios', 'Preencha nome, CPF, RM e senha.');
+    if (!cleanName || !cleanEmail || !cleanCpf || !senha.trim()) {
+      Alert.alert('Campos obrigatórios', 'Preencha nome, e-mail, CPF e senha.');
       return false;
     }
 
@@ -79,52 +65,49 @@ export default function App() {
       return false;
     }
 
-    if (!/^\d{4}$/.test(cleanRm)) {
-      Alert.alert('RM inválido', 'O RM deve ter exatamente 4 dígitos.');
+    try {
+      await apiRequest('/cadastro_usuario', {
+        method: 'POST',
+        body: {
+          nome: cleanName,
+          email: cleanEmail,
+          senha: senha.trim(),
+          cpf: cleanCpf,
+        },
+      });
+      Alert.alert('Cadastro concluído', 'Seu usuário foi cadastrado com sucesso!');
+      setScreen('login');
+      return true;
+    } catch (error) {
+      Alert.alert('Erro no cadastro', error.message);
       return false;
     }
-
-    const cpfExists = users.some((user) => user.cpf === cleanCpf);
-    if (cpfExists) {
-      Alert.alert('CPF já cadastrado', 'Esse CPF já está sendo usado.');
-      return false;
-    }
-
-    const newUser = {
-      id: Date.now().toString(),
-      name: cleanName,
-      cpf: cleanCpf,
-      senha: senha.trim(),
-      rm: cleanRm,
-    };
-
-    setUsers((prev) => [...prev, newUser]);
-    Alert.alert('Cadastro concluído', 'Seu usuário foi cadastrado com sucesso!');
-    setScreen('login');
-    return true;
   };
 
-  const handleLoginUser = async ({ cpf, rm, senha }) => {
-    const cleanCpf = cpf.replace(/\D/g, '');
-    const cleanRm = rm.replace(/\D/g, '');
+  const handleLoginUser = async ({ email, senha }) => {
+    const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanCpf || !cleanRm || !senha.trim()) {
-      Alert.alert('Dados incompletos', 'Informe CPF, RM e senha para entrar.');
+    if (!cleanEmail || !senha.trim()) {
+      Alert.alert('Dados incompletos', 'Informe e-mail e senha para entrar.');
       return false;
     }
 
-    const user = users.find(
-      (item) => item.cpf === cleanCpf && item.rm === cleanRm && item.senha === senha.trim()
-    );
+    try {
+      const response = await apiRequest('/login', {
+        method: 'POST',
+        body: { email: cleanEmail, senha: senha.trim() },
+      });
+      if (response.erro !== 'n' || !response.usuario) {
+        throw new Error(response.mensagem || 'Não foi possível entrar.');
+      }
 
-    if (!user) {
-      Alert.alert('Credenciais inválidas', 'CPF, RM ou senha não conferem.');
+      setLoggedUser({ ...response.usuario, token: response.token });
+      setScreen('home');
+      return true;
+    } catch (error) {
+      Alert.alert('Erro no login', error.message);
       return false;
     }
-
-    setLoggedUser(user);
-    setScreen('home');
-    return true;
   };
 
   const handleAddComputer = async ({ nome, codigo }) => {
@@ -141,15 +124,26 @@ export default function App() {
       return false;
     }
 
-    const newComputer = {
-      id: Date.now().toString(),
-      nome: cleanName,
-      codigo: cleanCode,
-    };
+    try {
+      await apiRequest('/cadastro_computador', {
+        method: 'POST',
+        body: { nome_dispositivo: cleanName, codigo: cleanCode },
+      });
+    } catch (error) {
+      Alert.alert('Erro ao cadastrar computador', error.message);
+      return false;
+    }
 
-    setComputers((prev) => [newComputer, ...prev]);
-    Alert.alert('Computador registrado', 'O computador foi cadastrado com sucesso.');
     setScreen('home');
+    try {
+      setComputers(await apiRequest('/computadores'));
+      Alert.alert('Computador registrado', 'O computador foi cadastrado com sucesso.');
+    } catch (error) {
+      Alert.alert(
+        'Computador cadastrado',
+        `O computador foi salvo, mas a lista não pôde ser atualizada. ${error.message}`
+      );
+    }
     return true;
   };
 

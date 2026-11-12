@@ -24,7 +24,7 @@ export default function Home({ user, computers, onLogout, onRegisterComputer }) 
         ) : (
           computers.map((computer) => (
             <View key={computer.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{computer.nome}</Text>
+              <Text style={styles.cardTitle}>{computer.nome_dispositivo}</Text>
               <Text style={styles.cardText}>Código: {computer.codigo}</Text>
             </View>
           ))

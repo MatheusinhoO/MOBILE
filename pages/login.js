@@ -11,12 +11,11 @@ import {
 } from 'react-native';
 
 export default function Login({ onRegister, onLogin }) {
-  const [cpf, setCpf] = useState('');
-  const [rm, setRm] = useState('');
+  const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
   const handleSubmit = () => {
-    onLogin({ cpf, rm, senha });
+    onLogin({ email, senha });
   };
 
   return (
@@ -29,21 +28,12 @@ export default function Login({ onRegister, onLogin }) {
 
         <TextInput
           style={styles.input}
-          placeholder="CPF"
-          value={cpf}
-          onChangeText={setCpf}
-          keyboardType="numeric"
-          maxLength={11}
+          placeholder="E-mail"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
           autoCapitalize="none"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="RM (4 dígitos)"
-          value={rm}
-          onChangeText={setRm}
-          keyboardType="numeric"
-          maxLength={4}
+          autoCorrect={false}
         />
 
         <TextInput

@@ -12,12 +12,12 @@ import {
 
 export default function Register({ onLogin, onRegister }) {
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [cpf, setCpf] = useState('');
   const [senha, setSenha] = useState('');
-  const [rm, setRm] = useState('');
 
   const handleSubmit = () => {
-    onRegister({ name, cpf, senha, rm });
+    onRegister({ name, email, cpf, senha });
   };
 
   return (
@@ -38,6 +38,16 @@ export default function Register({ onLogin, onRegister }) {
 
         <TextInput
           style={styles.input}
+          placeholder="E-mail"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+
+        <TextInput
+          style={styles.input}
           placeholder="CPF"
           value={cpf}
           onChangeText={setCpf}
@@ -52,15 +62,6 @@ export default function Register({ onLogin, onRegister }) {
           onChangeText={setSenha}
           secureTextEntry
           autoCapitalize="none"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="RM (4 dígitos)"
-          value={rm}
-          onChangeText={setRm}
-          keyboardType="numeric"
-          maxLength={4}
         />
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
